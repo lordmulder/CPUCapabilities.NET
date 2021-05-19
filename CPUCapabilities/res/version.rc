@@ -1,0 +1,67 @@
+/////////////////////////////////////////////////////////////////////////////
+//
+// Microsoft Visual C++ generated resource script.
+//
+#define APSTUDIO_READONLY_SYMBOLS
+#include "WinResrc.h" //"afxres.h"
+#undef APSTUDIO_READONLY_SYMBOLS
+
+#if !defined(ARCH_X64) && !defined(ARCH_X86)
+#error CPU type not defined!
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Neutral resources
+//
+#ifdef _WIN32
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION    1,0,0,0
+ PRODUCTVERSION 1,0,0,0
+ FILEFLAGSMASK 0x17L
+#ifdef _DEBUG
+ FILEFLAGS 0x3L
+#else
+ FILEFLAGS 0x2L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "000004b0"
+        BEGIN
+            VALUE "ProductName",      "CPUCapabilities.NET"
+#if defined(ARCH_X64)
+            VALUE "FileDescription",  "CPUCapabilities.NET [x64]"
+#else
+            VALUE "FileDescription",  "CPUCapabilities.NET [x86]"
+#endif
+            VALUE "ProductVersion",   "1.00"
+            VALUE "FileVersion",      "1.00"
+            VALUE "InternalName",     "CPUCapabilitiesDotNet"
+#if defined(ARCH_X64)
+            VALUE "OriginalFilename", "cpu-capabilities-x64.dll"
+#else
+            VALUE "OriginalFilename", "cpu-capabilities-x86.dll"
+#endif
+            VALUE "LegalCopyright",   "Created by LoRd_MuldeR <MuldeR2@GMX.de>"
+            VALUE "CompanyName",      "Muldersoft"
+            VALUE "LegalTrademarks",  "Muldersoft"
+            VALUE "Comments",         "This work has been released under the CC0 1.0 Universal license!"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0, 1200
+    END
+END
