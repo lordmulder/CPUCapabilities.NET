@@ -4,6 +4,7 @@
 /******************************************************************************/
 
 using System;
+using System.Reflection;
 
 namespace Muldersoft.CPUCapabilitiesDotNet
 {
@@ -13,16 +14,17 @@ namespace Muldersoft.CPUCapabilitiesDotNet
         {
             try
             {
-                Console.WriteLine("[CPUCapabilities]");
-                Console.WriteLine("Architecture: {0}", CPUCapabilities.Architecture);
-                Console.WriteLine("Count: {0}", CPUCapabilities.Count);
-                Console.WriteLine("VendorString: \"{0}\"", OrDefault(CPUCapabilities.VendorString));
-                Console.WriteLine("BrandString: \"{0}\"", OrDefault(CPUCapabilities.BrandString));
-                Console.WriteLine("FamilyAndModel: Family={0}, Model={1}, Stepping={2}", CPUCapabilities.FamilyAndModel.Item1, CPUCapabilities.FamilyAndModel.Item2, CPUCapabilities.FamilyAndModel.Item3);
-                Console.WriteLine("Capabilities: {0}", CPUCapabilities.Capabilities);
+                Console.WriteLine("CPUCapabilities v{0:D}.{1:D2} [{2}]", CPU.LibraryVersion.Item1, CPU.LibraryVersion.Item2, BuildDate.ToString("yyyy-MM-dd"));
+                Console.WriteLine();
+                Console.WriteLine("Architecture: {0}", CPU.Architecture);
+                Console.WriteLine("Count: {0}", CPU.Count);
+                Console.WriteLine("Vendor: \"{0}\"", OrDefault(CPU.Vendor));
+                Console.WriteLine("Specification: {0}", CPU.Information);
+                Console.WriteLine("Brand: \"{0}\"", OrDefault(CPU.Brand));
+                Console.WriteLine("Capabilities: {0}", CPU.Capabilities);
                 Console.WriteLine();
                 Console.WriteLine("[Debug]");
-                Console.WriteLine("IsX64Process: {0}", CPUCapabilities.IsX64Process);
+                Console.WriteLine("IsX64Process: {0}", CPU.IsX64Process);
                 Console.WriteLine();
             }
             catch (Exception e)
@@ -37,6 +39,15 @@ namespace Muldersoft.CPUCapabilitiesDotNet
         private static string OrDefault(string text)
         {
             return string.IsNullOrEmpty(text) ? "N/A" : text;
+        }
+
+        private static DateTime BuildDate
+        {
+            get
+            {
+                Version version = Assembly.GetExecutingAssembly().GetName().Version;
+                return new DateTime(2000, 1, 1).Add(new TimeSpan(TimeSpan.TicksPerDay * version.Build + TimeSpan.TicksPerSecond * 2 * version.Revision));
+            }
         }
     }
 }

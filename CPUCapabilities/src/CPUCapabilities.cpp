@@ -155,7 +155,7 @@ static BOOL get_cpu_vendor_string(char *const buffer, const DWORD size)
 // Detect CPU Family & Model
 // ==========================================================================
 
-static BOOL get_cpu_family_and_model(DWORD *const family, DWORD *const model, DWORD *const stepping)
+static BOOL get_cpu_information(BYTE *const type, BYTE *const family_ext, BYTE *const family, BYTE *const model_ext, BYTE *const model, BYTE *const stepping)
 {
 	DWORD eax, ebx, ecx, edx;
 	
@@ -167,9 +167,12 @@ static BOOL get_cpu_family_and_model(DWORD *const family, DWORD *const model, DW
 	}
 
 	cpuid(1U, eax, ebx, ecx, edx);
-	*family   = ((eax >> 8) & 0xF) + ((eax >> 20) & 0xFF);
-	*model    = ((eax >> 4) & 0xF) + ((eax >> 12) & 0xF0);
-	*stepping = eax & 0xF;
+	*stepping   = (BYTE)((eax >>  0) & 0x0F);
+	*model      = (BYTE)((eax >>  4) & 0x0F);
+	*family     = (BYTE)((eax >>  8) & 0x0F);
+	*model_ext  = (BYTE)((eax >> 16) & 0x0F);
+	*type       = (BYTE)((eax >> 12) & 0x03);
+	*family_ext = (BYTE)((eax >> 20) & 0xFF);
 
 	return TRUE;
 }
@@ -428,9 +431,9 @@ extern "C"
 		return get_cpu_vendor_string(buffer, size);
 	}
 
-	__declspec(dllexport) BOOL DLL_ENTRY(GetCPUFamilyAndModel)(DWORD *const family, DWORD *const model, DWORD *const stepping)
+	__declspec(dllexport) BOOL DLL_ENTRY(GetCPUInformation)(BYTE *const type, BYTE *const family_ext, BYTE *const family, BYTE *const model_ext, BYTE *const model, BYTE *const stepping)
 	{
-		return get_cpu_family_and_model(family, model, stepping);
+		return get_cpu_information(type, family_ext, family, model_ext, model, stepping);
 	}
 
 	__declspec(dllexport) DWORD DLL_ENTRY(GetCPUCapabilities)(void)

@@ -9,76 +9,119 @@ using System.Text;
 
 namespace Muldersoft.CPUCapabilitiesDotNet
 {
-    public static class CPUCapabilities
+    // ==================================================================
+    // CPU Flags
+    // ==================================================================
+
+    public enum CPUArchitecture : uint
+    {
+        CPU_ARCH_X86 = 0x00000001,
+        CPU_ARCH_X64 = 0x00000002
+    }
+
+    [Flags]
+    public enum CPUCapabilities : uint
+    {
+        CPU_3DNOW       = 0x00000001,
+        CPU_3DNOWEXT    = 0x00000002,
+        CPU_AES         = 0x00000004,
+        CPU_AVX         = 0x00000008,
+        CPU_AVX2        = 0x00000010,
+        CPU_AVX512_BW   = 0x00000020,
+        CPU_AVX512_CD   = 0x00000040,
+        CPU_AVX512_DQ   = 0x00000080,
+        CPU_AVX512_ER   = 0x00000100,
+        CPU_AVX512_F    = 0x00000200,
+        CPU_AVX512_IFMA = 0x00000400,
+        CPU_AVX512_PF   = 0x00000800,
+        CPU_AVX512_VL   = 0x00001000,
+        CPU_BMI1        = 0x00002000,
+        CPU_BMI2        = 0x00004000,
+        CPU_FMA3        = 0x00008000,
+        CPU_FMA4        = 0x00010000,
+        CPU_LZCNT       = 0x00020000,
+        CPU_MMX         = 0x00040000,
+        CPU_MMXEXT      = 0x00080000,
+        CPU_POPCNT      = 0x00100000,
+        CPU_RDRND       = 0x00200000,
+        CPU_RDSEED      = 0x00400000,
+        CPU_SHA         = 0x00800000,
+        CPU_SSE         = 0x01000000,
+        CPU_SSE2        = 0x02000000,
+        CPU_SSE3        = 0x04000000,
+        CPU_SSE41       = 0x08000000,
+        CPU_SSE42       = 0x10000000,
+        CPU_SSE4a       = 0x20000000,
+        CPU_SSSE3       = 0x40000000,
+        CPU_XOP         = 0x80000000
+    }
+
+    // ==================================================================
+    // CPUInformation
+    // ==================================================================
+
+    public struct CPUInformation
+    {
+        public CPUInformation(byte type, byte familyExtRaw, byte familyRaw, byte modelExtRaw, byte modelRaw, byte stepping)
+        {
+            Type         = type;
+            FamilyRaw    = familyRaw;
+            FamilyExtRaw = familyExtRaw;
+            ModelRaw     = modelRaw;
+            ModelExtRaw  = modelExtRaw;
+            Stepping     = stepping;
+        }
+
+        public byte Type         { get; }
+        public byte FamilyRaw    { get; }
+        public byte FamilyExtRaw { get; }
+        public byte ModelRaw     { get; }
+        public byte ModelExtRaw  { get; }
+        public byte Stepping     { get; }
+
+        public uint Family
+        {
+            get { return (FamilyRaw == 15U) ? (((uint)FamilyExtRaw) + FamilyRaw) : FamilyRaw; }
+        }
+
+        public uint Model
+        {
+            get { return ((FamilyRaw == 6U) || (FamilyRaw == 15U)) ? ((((uint)ModelExtRaw) << 4) + ModelRaw) : ModelRaw; }
+        }
+
+        public override String ToString()
+        {
+            return String.Format("Type={0}, Family={1}, Model={2}, Stepping={3}", Type, Family, Model, Stepping);
+        }
+    }
+
+    // ==================================================================
+    // CPU class
+    // ==================================================================
+
+    public static class CPU
     {
         private static readonly Lazy<bool> m_x64Process = new Lazy<bool>(() => Environment.Is64BitProcess);
-        private static readonly Lazy<Architectures> m_architecture = new Lazy<Architectures>(GetCPUArchitecture);
+        private static readonly Lazy<CPUArchitecture> m_architecture = new Lazy<CPUArchitecture>(GetCPUArchitecture);
         private static readonly Lazy<uint> m_count = new Lazy<uint>(GetCPUCount);
-        private static readonly Lazy<string> m_vendorString = new Lazy<string>(GetCPUVendorString);
-        private static readonly Lazy<Tuple<uint, uint, uint>> m_familyAndModel = new Lazy<Tuple<uint, uint, uint>>(GetCPUFamilyAndModel);
-        private static readonly Lazy<CapabilityFlags> m_capabilities = new Lazy<CapabilityFlags>(GetCPUCapabilities);
+        private static readonly Lazy<CPUInformation> m_information = new Lazy<CPUInformation>(GetCPUInformation);
+        private static readonly Lazy<string> m_vendor = new Lazy<string>(GetCPUVendorString);
+        private static readonly Lazy<CPUCapabilities> m_capabilities = new Lazy<CPUCapabilities>(GetCPUCapabilities);
         private static readonly Lazy<Tuple<ushort, ushort>> m_libraryVersion = new Lazy<Tuple<ushort, ushort>>(GetCPULibraryVersion);
-        private static readonly Lazy<string> m_brandString = new Lazy<string>(GetCPUBrandString);
+        private static readonly Lazy<string> m_brand = new Lazy<string>(GetCPUBrandString);
 
         private static readonly Tuple<ushort, ushort> REQUIRED_LIBRARY_VERSION = Tuple.Create<ushort, ushort>(2, 0);
 
-        // ==================================================================
-        // Flags
-        // ==================================================================
-
-        public enum Architectures : uint
-        {
-            CPU_ARCH_X86 = 0x00000001,
-            CPU_ARCH_X64 = 0x00000002
-        }
-
-        [Flags]
-        public enum CapabilityFlags : uint
-        {
-            CPU_3DNOW       = 0x00000001,
-            CPU_3DNOWEXT    = 0x00000002,
-            CPU_AES         = 0x00000004,
-            CPU_AVX         = 0x00000008,
-            CPU_AVX2        = 0x00000010,
-            CPU_AVX512_BW   = 0x00000020,
-            CPU_AVX512_CD   = 0x00000040,
-            CPU_AVX512_DQ   = 0x00000080,
-            CPU_AVX512_ER   = 0x00000100,
-            CPU_AVX512_F    = 0x00000200,
-            CPU_AVX512_IFMA = 0x00000400,
-            CPU_AVX512_PF   = 0x00000800,
-            CPU_AVX512_VL   = 0x00001000,
-            CPU_BMI1        = 0x00002000,
-            CPU_BMI2        = 0x00004000,
-            CPU_FMA3        = 0x00008000,
-            CPU_FMA4        = 0x00010000,
-            CPU_LZCNT       = 0x00020000,
-            CPU_MMX         = 0x00040000,
-            CPU_MMXEXT      = 0x00080000,
-            CPU_POPCNT      = 0x00100000,
-            CPU_RDRND       = 0x00200000,
-            CPU_RDSEED      = 0x00400000,
-            CPU_SHA         = 0x00800000,
-            CPU_SSE         = 0x01000000,
-            CPU_SSE2        = 0x02000000,
-            CPU_SSE3        = 0x04000000,
-            CPU_SSE41       = 0x08000000,
-            CPU_SSE42       = 0x10000000,
-            CPU_SSE4a       = 0x20000000,
-            CPU_SSSE3       = 0x40000000,
-            CPU_XOP         = 0x80000000
-        }
-
-        // ==================================================================
+        // ------------------------------------------------------------------
         // Properties
-        // ==================================================================
+        // ------------------------------------------------------------------
 
         public static bool IsX64Process
         {
             get { return m_x64Process.Value; }
         }
 
-        public static Architectures Architecture
+        public static CPUArchitecture Architecture
         {
             get { return m_architecture.Value; }
         }
@@ -88,24 +131,24 @@ namespace Muldersoft.CPUCapabilitiesDotNet
             get { return m_count.Value; }
         }
 
-        public static string VendorString
+        public static string Vendor
         {
-            get { return m_vendorString.Value; }
+            get { return m_vendor.Value; }
         }
 
-        public static Tuple<uint, uint, uint> FamilyAndModel
+        public static CPUInformation Information
         {
-            get { return m_familyAndModel.Value; }
+            get { return m_information.Value; }
         }
 
-        public static CapabilityFlags Capabilities
+        public static CPUCapabilities Capabilities
         {
             get { return m_capabilities.Value; }
         }
 
-        public static string BrandString
+        public static string Brand
         {
-            get { return m_brandString.Value; }
+            get { return m_brand.Value; }
         }
 
         public static Tuple<ushort, ushort> LibraryVersion
@@ -113,17 +156,17 @@ namespace Muldersoft.CPUCapabilitiesDotNet
             get { return m_libraryVersion.Value; }
         }
 
-        // ==================================================================
+        // ------------------------------------------------------------------
         // Initialization methods
-        // ==================================================================
+        // ------------------------------------------------------------------
 
-        private static Architectures GetCPUArchitecture()
+        private static CPUArchitecture GetCPUArchitecture()
         {
             try
             {
                 VerifyLibraryVersion();
                 uint value = IsX64Process ? Internal.GetCPUArchitectureX64() : Internal.GetCPUArchitectureX86();
-                return (Architectures)value;
+                return (CPUArchitecture)value;
             }
             catch (Exception e)
             {
@@ -163,17 +206,17 @@ namespace Muldersoft.CPUCapabilitiesDotNet
             }
         }
 
-        private static Tuple<uint, uint, uint> GetCPUFamilyAndModel()
+        private static CPUInformation GetCPUInformation()
         {
             try
             {
-                uint model, family, stepping;
+                byte type, familyExt, family, modelExt, model, stepping;
                 VerifyLibraryVersion();
-                if (IsX64Process ? Internal.GetCPUFamilyAndModelX64(out family, out model, out stepping) : Internal.GetCPUFamilyAndModelX86(out family, out model, out stepping))
+                if (IsX64Process ? Internal.GetCPUInformationX64(out type, out familyExt, out family, out modelExt, out model, out stepping) : Internal.GetCPUInformationX86(out type, out familyExt, out family, out modelExt, out model, out stepping))
                 {
-                    return Tuple.Create(family, model, stepping);
+                    return new CPUInformation(type, familyExt, family, modelExt, model, stepping);
                 }
-                return Tuple.Create(0U, 0U, 0U);
+                return new CPUInformation(0, 0, 0, 0, 0, 0);
             }
             catch (Exception e)
             {
@@ -181,13 +224,13 @@ namespace Muldersoft.CPUCapabilitiesDotNet
             }
         }
 
-        private static CapabilityFlags GetCPUCapabilities()
+        private static CPUCapabilities GetCPUCapabilities()
         {
             try
             {
                 VerifyLibraryVersion();
                 uint value = IsX64Process ? Internal.GetCPUCapabilitiesX64() : Internal.GetCPUCapabilitiesX86();
-                return (CapabilityFlags)value;
+                return (CPUCapabilities)value;
             }
             catch (Exception e)
             {
@@ -227,9 +270,9 @@ namespace Muldersoft.CPUCapabilitiesDotNet
             }
         }
 
-        // ==================================================================
+        // ------------------------------------------------------------------
         // P/Invoke methods
-        // ==================================================================
+        // ------------------------------------------------------------------
 
         private class Internal
         {
@@ -254,11 +297,11 @@ namespace Muldersoft.CPUCapabilitiesDotNet
             [DllImport(DLL_NAME_X86, CallingConvention = CallingConvention.Cdecl)]
             public static extern bool GetCPUVendorStringX86([Out] byte[] buffer, uint size);
 
-            /* GetCPUFamilyAndModel() */
+            /* GetCPUInformation() */
             [DllImport(DLL_NAME_X64, CallingConvention = CallingConvention.Cdecl)]
-            public static extern bool GetCPUFamilyAndModelX64(out uint family, out uint model, out uint stepping);
+            public static extern bool GetCPUInformationX64(out byte type, out byte familyExt, out byte family, out byte modelExt, out byte model, out byte stepping);
             [DllImport(DLL_NAME_X86, CallingConvention = CallingConvention.Cdecl)]
-            public static extern bool GetCPUFamilyAndModelX86(out uint family, out uint model, out uint stepping);
+            public static extern bool GetCPUInformationX86(out byte type, out byte familyExt, out byte family, out byte modelExt, out byte model, out byte stepping);
 
             /* GetCPUCapabilities() */
             [DllImport(DLL_NAME_X64, CallingConvention = CallingConvention.Cdecl)]
@@ -279,9 +322,9 @@ namespace Muldersoft.CPUCapabilitiesDotNet
             public static extern uint GetCPULibraryVersionX86();
         }
 
-        // ==================================================================
+        // ------------------------------------------------------------------
         // Utility methods
-        // ==================================================================
+        // ------------------------------------------------------------------
 
         private static void VerifyLibraryVersion()
         {
