@@ -11,8 +11,8 @@ namespace Muldersoft.CPUCapabilitiesDotNet
 {
     public static class CPUCapabilities
     {
-        private static readonly Lazy<bool> m_isX64Process = new Lazy<bool>(() => Environment.Is64BitProcess);
-        private static readonly Lazy<bool> m_isX64OperatingSystem = new Lazy<bool>(() => Environment.Is64BitOperatingSystem);
+        private static readonly Lazy<bool> m_x64Process = new Lazy<bool>(() => Environment.Is64BitProcess);
+        private static readonly Lazy<Architectures> m_architecture = new Lazy<Architectures>(GetCPUArchitecture);
         private static readonly Lazy<uint> m_count = new Lazy<uint>(GetCPUCount);
         private static readonly Lazy<string> m_vendorString = new Lazy<string>(GetCPUVendorString);
         private static readonly Lazy<Tuple<uint, uint, uint>> m_familyAndModel = new Lazy<Tuple<uint, uint, uint>>(GetCPUFamilyAndModel);
@@ -20,31 +20,53 @@ namespace Muldersoft.CPUCapabilitiesDotNet
         private static readonly Lazy<Tuple<ushort, ushort>> m_libraryVersion = new Lazy<Tuple<ushort, ushort>>(GetCPULibraryVersion);
         private static readonly Lazy<string> m_brandString = new Lazy<string>(GetCPUBrandString);
 
-        private const ushort REQUIRED_LIBRARY_VERSION = 1;
+        private static readonly Tuple<ushort, ushort> REQUIRED_LIBRARY_VERSION = Tuple.Create<ushort, ushort>(2, 0);
 
         // ==================================================================
-        // Capability flags
+        // Flags
         // ==================================================================
+
+        public enum Architectures : uint
+        {
+            CPU_ARCH_X86 = 0x00000001,
+            CPU_ARCH_X64 = 0x00000002
+        }
 
         [Flags]
         public enum CapabilityFlags : uint
         {
-            CPU_MMX    = 0x00000001,
-            CPU_SSE    = 0x00000002,
-            CPU_SSE2   = 0x00000004,
-            CPU_LZCNT  = 0x00000008,
-            CPU_SSE3   = 0x00000010,
-            CPU_SSSE3  = 0x00000020,
-            CPU_SSE4   = 0x00000040,
-            CPU_SSE42  = 0x00000080,
-            CPU_AVX    = 0x00000100,
-            CPU_XOP    = 0x00000200,
-            CPU_FMA4   = 0x00000400,
-            CPU_FMA3   = 0x00000800,
-            CPU_BMI1   = 0x00001000,
-            CPU_BMI2   = 0x00002000,
-            CPU_AVX2   = 0x00004000,
-            CPU_AVX512 = 0x00008000
+            CPU_3DNOW       = 0x00000001,
+            CPU_3DNOWEXT    = 0x00000002,
+            CPU_AES         = 0x00000004,
+            CPU_AVX         = 0x00000008,
+            CPU_AVX2        = 0x00000010,
+            CPU_AVX512_BW   = 0x00000020,
+            CPU_AVX512_CD   = 0x00000040,
+            CPU_AVX512_DQ   = 0x00000080,
+            CPU_AVX512_ER   = 0x00000100,
+            CPU_AVX512_F    = 0x00000200,
+            CPU_AVX512_IFMA = 0x00000400,
+            CPU_AVX512_PF   = 0x00000800,
+            CPU_AVX512_VL   = 0x00001000,
+            CPU_BMI1        = 0x00002000,
+            CPU_BMI2        = 0x00004000,
+            CPU_FMA3        = 0x00008000,
+            CPU_FMA4        = 0x00010000,
+            CPU_LZCNT       = 0x00020000,
+            CPU_MMX         = 0x00040000,
+            CPU_MMXEXT      = 0x00080000,
+            CPU_POPCNT      = 0x00100000,
+            CPU_RDRND       = 0x00200000,
+            CPU_RDSEED      = 0x00400000,
+            CPU_SHA         = 0x00800000,
+            CPU_SSE         = 0x01000000,
+            CPU_SSE2        = 0x02000000,
+            CPU_SSE3        = 0x04000000,
+            CPU_SSE41       = 0x08000000,
+            CPU_SSE42       = 0x10000000,
+            CPU_SSE4a       = 0x20000000,
+            CPU_SSSE3       = 0x40000000,
+            CPU_XOP         = 0x80000000
         }
 
         // ==================================================================
@@ -53,12 +75,12 @@ namespace Muldersoft.CPUCapabilitiesDotNet
 
         public static bool IsX64Process
         {
-            get { return m_isX64Process.Value; }
+            get { return m_x64Process.Value; }
         }
 
-        public static bool IsX64OperatingSystem
+        public static Architectures Architecture
         {
-            get { return m_isX64OperatingSystem.Value; }
+            get { return m_architecture.Value; }
         }
 
         public static uint Count
@@ -94,6 +116,20 @@ namespace Muldersoft.CPUCapabilitiesDotNet
         // ==================================================================
         // Initialization methods
         // ==================================================================
+
+        private static Architectures GetCPUArchitecture()
+        {
+            try
+            {
+                VerifyLibraryVersion();
+                uint value = IsX64Process ? Internal.GetCPUArchitectureX64() : Internal.GetCPUArchitectureX86();
+                return (Architectures)value;
+            }
+            catch (Exception e)
+            {
+                throw new SystemException("Failed to determine CPU architecture!", e);
+            }
+        }
 
         private static uint GetCPUCount()
         {
@@ -200,6 +236,12 @@ namespace Muldersoft.CPUCapabilitiesDotNet
             const string DLL_NAME_X86 = "cpu-capabilities-x86.dll";
             const string DLL_NAME_X64 = "cpu-capabilities-x64.dll";
 
+            /* GetCPUArchitecture() */
+            [DllImport(DLL_NAME_X64, CallingConvention = CallingConvention.Cdecl)]
+            public static extern uint GetCPUArchitectureX64();
+            [DllImport(DLL_NAME_X86, CallingConvention = CallingConvention.Cdecl)]
+            public static extern uint GetCPUArchitectureX86();
+
             /* GetCPUCount() */
             [DllImport(DLL_NAME_X64, CallingConvention = CallingConvention.Cdecl)]
             public static extern uint GetCPUCountX64();
@@ -243,7 +285,7 @@ namespace Muldersoft.CPUCapabilitiesDotNet
 
         private static void VerifyLibraryVersion()
         {
-            if (LibraryVersion.Item1 != REQUIRED_LIBRARY_VERSION)
+            if ((LibraryVersion.Item1 != REQUIRED_LIBRARY_VERSION.Item1) || (LibraryVersion.Item2 < REQUIRED_LIBRARY_VERSION.Item2))
             {
                 throw new InvalidOperationException(string.Format("CPU library version {0} is not supported! (required version: {1})", m_libraryVersion.Value.Item1, REQUIRED_LIBRARY_VERSION));
             }

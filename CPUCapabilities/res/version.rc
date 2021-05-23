@@ -24,8 +24,8 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 // Version
 //
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION    1,0,0,0
- PRODUCTVERSION 1,0,0,0
+ FILEVERSION    2,0,0,0
+ PRODUCTVERSION 2,0,0,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x3L
@@ -46,8 +46,8 @@ BEGIN
 #else
             VALUE "FileDescription",  "CPUCapabilities.NET [x86]"
 #endif
-            VALUE "ProductVersion",   "1.00"
-            VALUE "FileVersion",      "1.00"
+            VALUE "ProductVersion",   "2.00"
+            VALUE "FileVersion",      "2.00"
             VALUE "InternalName",     "CPUCapabilitiesDotNet"
 #if defined(ARCH_X64)
             VALUE "OriginalFilename", "cpu-capabilities-x64.dll"

@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CPUCapabilities", "CPUCapabilities\CPUCapabilities.vcxproj", "{80EB3E88-8C64-46BD-AD69-002D4F39AD9B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleApp", "ExampleApp\ExampleApp.csproj", "{17B8C89E-BADD-4BDB-A3BF-C0937D8E3F66}"
+	ProjectSection(ProjectDependencies) = postProject
+		{80EB3E88-8C64-46BD-AD69-002D4F39AD9B} = {80EB3E88-8C64-46BD-AD69-002D4F39AD9B}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

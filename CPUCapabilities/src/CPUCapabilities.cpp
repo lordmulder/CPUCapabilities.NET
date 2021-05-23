@@ -11,29 +11,52 @@
 #pragma intrinsic(__cpuid)
 #pragma intrinsic(_xgetbv)
 
-static const WORD LIBRARY_VERSION_MAJOR = 1U;
+static const WORD LIBRARY_VERSION_MAJOR = 2U;
 static const WORD LIBRARY_VERSION_MINOR = 0U;
 
+#if ((!defined(_M_X64)) || (_M_X64 < 100)) && ((!defined(_M_IX86)) || (_M_IX86 < 600))
+#error Unsupported CPU architecture!
+#endif
+
 // ==========================================================================
-// CPU Capabilities
+// CPU FLAGS
 // ==========================================================================
 
-#define CPU_CAPABILITY_MMX    0x00000001
-#define CPU_CAPABILITY_SSE    0x00000002
-#define CPU_CAPABILITY_SSE2   0x00000004
-#define CPU_CAPABILITY_LZCNT  0x00000008
-#define CPU_CAPABILITY_SSE3   0x00000010
-#define CPU_CAPABILITY_SSSE3  0x00000020
-#define CPU_CAPABILITY_SSE4   0x00000040
-#define CPU_CAPABILITY_SSE42  0x00000080
-#define CPU_CAPABILITY_AVX    0x00000100
-#define CPU_CAPABILITY_XOP    0x00000200
-#define CPU_CAPABILITY_FMA4   0x00000400
-#define CPU_CAPABILITY_FMA3   0x00000800
-#define CPU_CAPABILITY_BMI1   0x00001000
-#define CPU_CAPABILITY_BMI2   0x00002000
-#define CPU_CAPABILITY_AVX2   0x00004000
-#define CPU_CAPABILITY_AVX512 0x00008000
+#define CPU_ARCH_X86 0x00000001
+#define CPU_ARCH_X64 0x00000002
+
+#define CPU_CAPABILITY_3DNOW       0x00000001
+#define CPU_CAPABILITY_3DNOWEXT    0x00000002
+#define CPU_CAPABILITY_AES         0x00000004
+#define CPU_CAPABILITY_AVX         0x00000008
+#define CPU_CAPABILITY_AVX2        0x00000010
+#define CPU_CAPABILITY_AVX512_BW   0x00000020
+#define CPU_CAPABILITY_AVX512_CD   0x00000040
+#define CPU_CAPABILITY_AVX512_DQ   0x00000080
+#define CPU_CAPABILITY_AVX512_ER   0x00000100
+#define CPU_CAPABILITY_AVX512_F    0x00000200
+#define CPU_CAPABILITY_AVX512_IFMA 0x00000400
+#define CPU_CAPABILITY_AVX512_PF   0x00000800
+#define CPU_CAPABILITY_AVX512_VL   0x00001000
+#define CPU_CAPABILITY_BMI1        0x00002000
+#define CPU_CAPABILITY_BMI2        0x00004000
+#define CPU_CAPABILITY_FMA3        0x00008000
+#define CPU_CAPABILITY_FMA4        0x00010000
+#define CPU_CAPABILITY_LZCNT       0x00020000
+#define CPU_CAPABILITY_MMX         0x00040000
+#define CPU_CAPABILITY_MMXEXT      0x00080000
+#define CPU_CAPABILITY_POPCNT      0x00100000
+#define CPU_CAPABILITY_RDRND       0x00200000
+#define CPU_CAPABILITY_RDSEED      0x00400000
+#define CPU_CAPABILITY_SHA         0x00800000
+#define CPU_CAPABILITY_SSE         0x01000000
+#define CPU_CAPABILITY_SSE2        0x02000000
+#define CPU_CAPABILITY_SSE3        0x04000000
+#define CPU_CAPABILITY_SSE41       0x08000000
+#define CPU_CAPABILITY_SSE42       0x10000000
+#define CPU_CAPABILITY_SSE4a       0x20000000
+#define CPU_CAPABILITY_SSSE3       0x40000000
+#define CPU_CAPABILITY_XOP         0x80000000
 
 // ==========================================================================
 // Utility Functions
@@ -56,24 +79,49 @@ static void cpuid(const DWORD idx, DWORD &eax, DWORD &ebx, DWORD &ecx, DWORD &ed
 }
 
 // ==========================================================================
+// Detect CPU Architecture
+// ==========================================================================
+
+typedef BOOL(WINAPI* LPFN_ISWOW64PROCESS)(HANDLE, PBOOL);
+
+static DWORD get_cpu_architecture(void)
+{
+#if !defined(_M_X64)
+	const LPFN_ISWOW64PROCESS is_wow64_process = (LPFN_ISWOW64PROCESS)GetProcAddress(GetModuleHandle(TEXT("kernel32")), "IsWow64Process");
+	if (NULL != is_wow64_process)
+	{
+		BOOL is_wow64 = FALSE;
+		if (is_wow64_process(GetCurrentProcess(), &is_wow64))
+		{
+			return is_wow64 ? CPU_ARCH_X64 : CPU_ARCH_X86;
+		}
+	}
+	return CPU_ARCH_X86;
+#else
+	return CPU_ARCH_X64;
+#endif
+}
+
+// ==========================================================================
 // Detect CPU Count
 // ==========================================================================
 
 static DWORD get_cpu_count(void)
 {
-	DWORD_PTR process_mask, system_mask, current_bit;
+	DWORD_PTR process_mask, system_mask;
 	DWORD count = 0U;
 	if (GetProcessAffinityMask(GetCurrentProcess(), &process_mask, &system_mask))
 	{
-		for (current_bit = 1U; current_bit != 0U; current_bit <<= 1)
+		while (system_mask)
 		{
-			if (system_mask & current_bit)
+			if ((system_mask & 1U) == 1U)
 			{
 				++count;
 			}
+			system_mask >>= 1;
 		}
 	}
-	return count;
+	return max(count, 1U);
 }
 
 // ==========================================================================
@@ -153,7 +201,7 @@ static DWORD get_cpu_capabilities(void)
 
 	if (edx & 0x02000000)
 	{
-		cpu_caps |= CPU_CAPABILITY_SSE;
+		cpu_caps |= CPU_CAPABILITY_SSE | CPU_CAPABILITY_MMXEXT;
 	}
 	if (edx & 0x04000000)
 	{
@@ -169,11 +217,23 @@ static DWORD get_cpu_capabilities(void)
 	}
 	if (ecx & 0x00080000)
 	{
-		cpu_caps |= CPU_CAPABILITY_SSE4;
+		cpu_caps |= CPU_CAPABILITY_SSE41;
 	}
 	if (ecx & 0x00100000)
 	{
 		cpu_caps |= CPU_CAPABILITY_SSE42;
+	}
+	if (ecx & 0x00800000)
+	{
+		cpu_caps |= CPU_CAPABILITY_POPCNT;
+	}
+	if (ecx & 0x02000000)
+	{
+		cpu_caps |= CPU_CAPABILITY_AES;
+	}
+	if (ecx & 0x40000000)
+	{
+		cpu_caps |= CPU_CAPABILITY_RDRND;
 	}
 
 	if (ecx & 0x08000000)
@@ -181,13 +241,13 @@ static DWORD get_cpu_capabilities(void)
 		UINT64 xcr0 = _xgetbv(0U);
 		if ((xcr0 & 0x6) == 0x6)
 		{
-			if (ecx & 0x10000000)
-			{
-				cpu_caps |= CPU_CAPABILITY_AVX;
-			}
 			if (ecx & 0x00001000)
 			{
 				cpu_caps |= CPU_CAPABILITY_FMA3;
+			}
+			if (ecx & 0x10000000)
+			{
+				cpu_caps |= CPU_CAPABILITY_AVX;
 			}
 			if (max_basic_caps >= 7U)
 			{
@@ -204,9 +264,48 @@ static DWORD get_cpu_capabilities(void)
 				{
 					cpu_caps |= CPU_CAPABILITY_AVX2;
 				}
-				if (((xcr0 & 0xE0) == 0xE0) && ((ebx & 0xD0030000) == 0xD0030000))
+				if (ebx & 0x00100000)
 				{
-					cpu_caps |= CPU_CAPABILITY_AVX512;
+					cpu_caps |= CPU_CAPABILITY_RDSEED;
+				}
+				if (ebx & 0x20000000)
+				{
+					cpu_caps |= CPU_CAPABILITY_SHA;
+				}
+				if ((xcr0 & 0xE0) == 0xE0)
+				{
+					if (ebx & 0x00010000)
+					{
+						cpu_caps |= CPU_CAPABILITY_AVX512_F;
+					}
+					if (ebx & 0x00020000)
+					{
+						cpu_caps |= CPU_CAPABILITY_AVX512_DQ;
+					}
+					if (ebx & 0x00040000)
+					{
+						cpu_caps |= CPU_CAPABILITY_AVX512_IFMA;
+					}
+					if (ebx & 0x04000000)
+					{
+						cpu_caps |= CPU_CAPABILITY_AVX512_PF;
+					}
+					if (ebx & 0x08000000)
+					{
+						cpu_caps |= CPU_CAPABILITY_AVX512_ER;
+					}
+					if (ebx & 0x10000000)
+					{
+						cpu_caps |= CPU_CAPABILITY_AVX512_CD;
+					}
+					if (ebx & 0x40000000)
+					{
+						cpu_caps |= CPU_CAPABILITY_AVX512_BW;
+					}
+					if (ebx & 0x80000000)
+					{
+						cpu_caps |= CPU_CAPABILITY_AVX512_VL;
+					}
 				}
 			}
 		}
@@ -220,6 +319,10 @@ static DWORD get_cpu_capabilities(void)
 		{
 			cpu_caps |= CPU_CAPABILITY_LZCNT;
 		}
+		if (ecx & 0x00000040)
+		{
+			cpu_caps |= CPU_CAPABILITY_SSE4a;
+		}
 		if (cpu_caps & CPU_CAPABILITY_AVX)
 		{
 			if (ecx & 0x00000800)
@@ -230,6 +333,18 @@ static DWORD get_cpu_capabilities(void)
 			{
 				cpu_caps |= CPU_CAPABILITY_FMA4;
 			}
+		}
+		if (edx & 0x00400000)
+		{
+			cpu_caps |= CPU_CAPABILITY_MMXEXT;
+		}
+		if (edx & 0x80000000)
+		{
+			cpu_caps |= CPU_CAPABILITY_3DNOW;
+		}
+		if (edx & 0x40000000)
+		{
+			cpu_caps |= CPU_CAPABILITY_3DNOWEXT;
 		}
 	}
 
@@ -296,6 +411,11 @@ extern "C"
 	__declspec(dllexport) DWORD DLL_ENTRY(GetCPULibraryVersion)(void)
 	{
 		return (((DWORD)LIBRARY_VERSION_MAJOR) << 16U) | ((DWORD)LIBRARY_VERSION_MINOR);
+	}
+
+	__declspec(dllexport) DWORD DLL_ENTRY(GetCPUArchitecture)(void)
+	{
+		return get_cpu_architecture();
 	}
 
 	__declspec(dllexport) DWORD DLL_ENTRY(GetCPUCount)(void)
