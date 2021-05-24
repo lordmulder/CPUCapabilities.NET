@@ -43,7 +43,7 @@ namespace Muldersoft.CPUCapabilitiesDotNet
         CPU_AVX512_VPOPCNTDQ = 0x0000000000040000,
         CPU_BMI1             = 0x0000000000080000,
         CPU_BMI2             = 0x0000000000100000,
-        CPU_CLSFH            = 0x0000000000200000,
+        CPU_CLFSH            = 0x0000000000200000,
         CPU_CMOV             = 0x0000000000400000,
         CPU_CX16             = 0x0000000000800000,
         CPU_CX8              = 0x0000000001000000,
@@ -93,31 +93,31 @@ namespace Muldersoft.CPUCapabilitiesDotNet
 
     public struct CPUInformation
     {
-        public CPUInformation(byte type, byte familyExtRaw, byte familyRaw, byte modelExtRaw, byte modelRaw, byte stepping)
+        public CPUInformation(byte type, byte familyExt, byte family, byte modelExt, byte model, byte stepping)
         {
             Type         = type;
-            FamilyRaw    = familyRaw;
-            FamilyExtRaw = familyExtRaw;
-            ModelRaw     = modelRaw;
-            ModelExtRaw  = modelExtRaw;
+            RawFamily    = family;
+            RawFamilyExt = familyExt;
+            RawModel     = model;
+            RawModelExt  = modelExt;
             Stepping     = stepping;
         }
 
         public byte Type         { get; }
-        public byte FamilyRaw    { get; }
-        public byte FamilyExtRaw { get; }
-        public byte ModelRaw     { get; }
-        public byte ModelExtRaw  { get; }
+        public byte RawFamily    { get; }
+        public byte RawFamilyExt { get; }
+        public byte RawModel     { get; }
+        public byte RawModelExt  { get; }
         public byte Stepping     { get; }
 
         public uint Family
         {
-            get { return (FamilyRaw == 15U) ? (((uint)FamilyExtRaw) + FamilyRaw) : FamilyRaw; }
+            get { return (RawFamily == 15U) ? (((uint)RawFamilyExt) + RawFamily) : RawFamily; }
         }
 
         public uint Model
         {
-            get { return ((FamilyRaw == 6U) || (FamilyRaw == 15U)) ? ((((uint)ModelExtRaw) << 4) + ModelRaw) : ModelRaw; }
+            get { return ((RawFamily == 6U) || (RawFamily == 15U)) ? ((((uint)RawModelExt) << 4) + RawModel) : RawModel; }
         }
 
         public override String ToString()
