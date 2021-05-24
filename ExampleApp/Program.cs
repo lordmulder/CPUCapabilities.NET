@@ -19,7 +19,7 @@ namespace Muldersoft.CPUCapabilitiesDotNet
                 Console.WriteLine("Architecture: {0}", CPU.Architecture);
                 Console.WriteLine("Count: {0}", CPU.Count);
                 Console.WriteLine("Vendor: \"{0}\"", OrDefault(CPU.Vendor));
-                Console.WriteLine("Specification: {0}", CPU.Information);
+                Console.WriteLine("Information: {0}", CPU.Information);
                 Console.WriteLine("Brand: \"{0}\"", OrDefault(CPU.Brand));
                 Console.WriteLine("Capabilities: {0}", CPU.Capabilities);
                 Console.WriteLine();

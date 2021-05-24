@@ -20,40 +20,71 @@ namespace Muldersoft.CPUCapabilitiesDotNet
     }
 
     [Flags]
-    public enum CPUCapabilities : uint
+    public enum CPUCapabilities : ulong
     {
-        CPU_3DNOW       = 0x00000001,
-        CPU_3DNOWEXT    = 0x00000002,
-        CPU_AES         = 0x00000004,
-        CPU_AVX         = 0x00000008,
-        CPU_AVX2        = 0x00000010,
-        CPU_AVX512_BW   = 0x00000020,
-        CPU_AVX512_CD   = 0x00000040,
-        CPU_AVX512_DQ   = 0x00000080,
-        CPU_AVX512_ER   = 0x00000100,
-        CPU_AVX512_F    = 0x00000200,
-        CPU_AVX512_IFMA = 0x00000400,
-        CPU_AVX512_PF   = 0x00000800,
-        CPU_AVX512_VL   = 0x00001000,
-        CPU_BMI1        = 0x00002000,
-        CPU_BMI2        = 0x00004000,
-        CPU_FMA3        = 0x00008000,
-        CPU_FMA4        = 0x00010000,
-        CPU_LZCNT       = 0x00020000,
-        CPU_MMX         = 0x00040000,
-        CPU_MMXEXT      = 0x00080000,
-        CPU_POPCNT      = 0x00100000,
-        CPU_RDRND       = 0x00200000,
-        CPU_RDSEED      = 0x00400000,
-        CPU_SHA         = 0x00800000,
-        CPU_SSE         = 0x01000000,
-        CPU_SSE2        = 0x02000000,
-        CPU_SSE3        = 0x04000000,
-        CPU_SSE41       = 0x08000000,
-        CPU_SSE42       = 0x10000000,
-        CPU_SSE4a       = 0x20000000,
-        CPU_SSSE3       = 0x40000000,
-        CPU_XOP         = 0x80000000
+        CPU_3DNOW            = 0x0000000000000001,
+        CPU_3DNOWEXT         = 0x0000000000000002,
+        CPU_ADX              = 0x0000000000000004,
+        CPU_AES              = 0x0000000000000008,
+        CPU_AVX              = 0x0000000000000010,
+        CPU_AVX2             = 0x0000000000000020,
+        CPU_AVX512_BITALG    = 0x0000000000000040,
+        CPU_AVX512_BW        = 0x0000000000000080,
+        CPU_AVX512_CD        = 0x0000000000000100,
+        CPU_AVX512_DQ        = 0x0000000000000200,
+        CPU_AVX512_ER        = 0x0000000000000400,
+        CPU_AVX512_F         = 0x0000000000000800,
+        CPU_AVX512_IFMA      = 0x0000000000001000,
+        CPU_AVX512_PF        = 0x0000000000002000,
+        CPU_AVX512_VBMI      = 0x0000000000004000,
+        CPU_AVX512_VBMI2     = 0x0000000000008000,
+        CPU_AVX512_VL        = 0x0000000000010000,
+        CPU_AVX512_VNNI      = 0x0000000000020000,
+        CPU_AVX512_VPOPCNTDQ = 0x0000000000040000,
+        CPU_BMI1             = 0x0000000000080000,
+        CPU_BMI2             = 0x0000000000100000,
+        CPU_CLSFH            = 0x0000000000200000,
+        CPU_CMOV             = 0x0000000000400000,
+        CPU_CX16             = 0x0000000000800000,
+        CPU_CX8              = 0x0000000001000000,
+        CPU_ERMS             = 0x0000000002000000,
+        CPU_FMA3             = 0x0000000004000000,
+        CPU_FMA4             = 0x0000000008000000,
+        CPU_FPU              = 0x0000000010000000,
+        CPU_FSGSBASE         = 0x0000000020000000,
+        CPU_FXSR             = 0x0000000040000000,
+        CPU_HLE              = 0x0000000080000000,
+        CPU_HTT              = 0x0000000100000000,
+        CPU_INVPCID          = 0x0000000200000000,
+        CPU_LAHF             = 0x0000000400000000,
+        CPU_LZCNT            = 0x0000000800000000,
+        CPU_MMX              = 0x0000001000000000,
+        CPU_MMXEXT           = 0x0000002000000000,
+        CPU_MONITOR          = 0x0000004000000000,
+        CPU_MOVBE            = 0x0000008000000000,
+        CPU_MSR              = 0x0000010000000000,
+        CPU_OSXSAVE          = 0x0000020000000000,
+        CPU_PCLMULQDQ        = 0x0000040000000000,
+        CPU_POPCNT           = 0x0000080000000000,
+        CPU_PREFETCHWT1      = 0x0000100000000000,
+        CPU_RDRND            = 0x0000200000000000,
+        CPU_RDSEED           = 0x0000400000000000,
+        CPU_RDTSCP           = 0x0000800000000000,
+        CPU_RTM              = 0x0001000000000000,
+        CPU_SEP              = 0x0002000000000000,
+        CPU_SHA              = 0x0004000000000000,
+        CPU_SSE              = 0x0008000000000000,
+        CPU_SSE2             = 0x0010000000000000,
+        CPU_SSE3             = 0x0020000000000000,
+        CPU_SSE41            = 0x0040000000000000,
+        CPU_SSE42            = 0x0080000000000000,
+        CPU_SSE4a            = 0x0100000000000000,
+        CPU_SSSE3            = 0x0200000000000000,
+        CPU_SYSCALL          = 0x0400000000000000,
+        CPU_TBM              = 0x0800000000000000,
+        CPU_TSC              = 0x1000000000000000,
+        CPU_XOP              = 0x2000000000000000,
+        CPU_XSAVE            = 0x4000000000000000
     }
 
     // ==================================================================
@@ -229,7 +260,7 @@ namespace Muldersoft.CPUCapabilitiesDotNet
             try
             {
                 VerifyLibraryVersion();
-                uint value = IsX64Process ? Internal.GetCPUCapabilitiesX64() : Internal.GetCPUCapabilitiesX86();
+                ulong value = IsX64Process ? Internal.GetCPUCapabilitiesX64() : Internal.GetCPUCapabilitiesX86();
                 return (CPUCapabilities)value;
             }
             catch (Exception e)
@@ -305,9 +336,9 @@ namespace Muldersoft.CPUCapabilitiesDotNet
 
             /* GetCPUCapabilities() */
             [DllImport(DLL_NAME_X64, CallingConvention = CallingConvention.Cdecl)]
-            public static extern uint GetCPUCapabilitiesX64();
+            public static extern ulong GetCPUCapabilitiesX64();
             [DllImport(DLL_NAME_X86, CallingConvention = CallingConvention.Cdecl)]
-            public static extern uint GetCPUCapabilitiesX86();
+            public static extern ulong GetCPUCapabilitiesX86();
 
             /* GetCPUBrandString() */
             [DllImport(DLL_NAME_X64, CallingConvention = CallingConvention.Cdecl)]
